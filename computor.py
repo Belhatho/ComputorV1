@@ -27,7 +27,7 @@ def terms_checker(part):
     for term in part:
         if (len(term) != 4):
             return False
-        if (term[1] == "" and term[3] == ""):
+        if (term[0] == "" and term[3] == ""):
             return False
     return True
 
@@ -77,15 +77,36 @@ def parser(str):
             equation[1].coef += term.coef
         elif term.deg == 2:
             equation[2].coef += term.coef
-        # else:
-        #     superior_degs.append(term)
-    print("SUP!!", superior_degs[0].deg)
+        else:
+            superior_degs.append(term)
+    
+    ### Polynom Degree ####
+    # for _ in superior_degs:
+    #     print("SUP!!", _)
+    i = 0
+    j = 0
+    while i < len(superior_degs):
+        j = i + 1
+        while j < len(superior_degs):
+            if superior_degs[i].deg == superior_degs[j].deg:
+                superior_degs[i].coef += superior_degs[j].coef
+                superior_degs.pop(j)
+            else:
+                j += 1
+        i += 1
+    # print("\n")
+    for _ in superior_degs:
+        print("SUP!!", _)    
 # *************************************
     poly_deg = 0
-
-    for _ in equation:
-        if _.deg > poly_deg and _.coef != 0:
-            poly_deg = _.deg
+    if len(superior_degs) == 0:
+        for _ in equation:  
+            if _.deg > poly_deg and _.coef != 0:
+                poly_deg = _.deg
+    else:
+        for _ in superior_degs:  
+            if _.deg > poly_deg and _.coef != 0:
+                poly_deg = _.deg
     # *************
     print("Equation: ")
     for _ in equation:
@@ -104,17 +125,48 @@ def print_reduced_form(equation):
                 else:
                     print(f"- {_.coef*(-1)}", end=" ")
             else:
-                if _.deg == 0:
-                    print(f"{_.coef}", end=" ")
+                if _.deg == 2:
+                    print(f"{_.coef} *", end=" ")
                 elif _.coef == 1:
                     print('+',end=" ")
                 else:
-                    print(f"+ {_.coef} *", end=" ")
+                    print(f"+ {_.coef}", end=" ")
             if _.deg != 0:
                 print(f"X^{_.deg}", end=" ")
         elif _.deg == 0:
             print(f"{_.coef}", end=" ")
     print("= 0\n**************")
+
+def sqrt(x, precision):
+    res = 0
+    pas = 1
+    while (pas > precision):
+        if (res * res == x):
+            break
+        elif (res * res > x):
+            res -= pas
+            pas /= 10
+        res += pas
+    return(res)
+
+def solve_2nd_deg(equation):
+    a = equation[2].coef
+    b = equation[1].coef
+    c = equation[0].coef
+    delta = b * b - 4 * a * c
+    if delta == 0:
+        print(f"Discriminat is null; The solution is: '{-b / (2*a)}'")
+    elif delta > 0:
+        x1 = (-b + sqrt(delta, 0.00000001))/ (2*a)
+        x2 = (-b - sqrt(delta, 0.00000001))/ (2*a)
+        print(f'Discriminat is strictly positive; The solutions are: \'{"{:.6f}".format(x1)}\' and \'{"{:.6f}".format(x2)}\'')
+    else:
+        print('Discriminat is strictly negative; The solutions are:', end=" ")
+        re = -b / (2*a)
+        im = sqrt(-delta, 0.00000001)/(2*a)
+        print(f'\'{float("{:.6f}".format(re))} + i*{float("{:.6f}".format(im))}\' and \'{float("{:.6f}".format(re))} - i*{float("{:.6f}".format(im))}\'')
+
+        
 
 def main(argv):
     argc = len(argv)
@@ -140,6 +192,8 @@ def main(argv):
             print("There are No possible Solutions!")
     elif poly_deg == 1:
         print("The solution is: ", equation[0].coef / equation[1].coef * (-1))
+    else:
+        solve_2nd_deg(equation)
         
 
 

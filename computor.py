@@ -1,9 +1,10 @@
 import sys
+from operator import attrgetter
 import re
 
 
 RE = "((?P<coef>[+-]?\d+\.?\d*)?\*?[Xx]\^?(?P<deg>\d+)*)|([+-]?\d+\.?\d*)"
-USAGE = "Usage:"
+USAGE = "Usage: python3 computor.py \"[EQUATION]\""
 EGALE_ERR = "Equation must have one '='"
 FORMAT_ERR = "Equation Format is Wrong"
 DEG_ERR = "The polynomial degree is stricly greater than 2, I can't solve."
@@ -21,6 +22,18 @@ class Complex:
          self.real = real
          self.imag = imag
 
+def sqrt(x, precision):
+    res = 0
+    pas = 1
+    while (pas > precision):
+        if (res * res == x):
+            break
+        elif (res * res > x):
+            res -= pas
+            pas /= 10
+        res += pas
+    return(res)
+
 def terms_checker(part):
     if len(part) == 0:
         return False
@@ -37,7 +50,6 @@ def deg_checker(term):
     return int(term)
 
 def coefs_degs_checker(part):
-    
     terms = []
     for term in part:
         if (term[0] != ""):
@@ -57,8 +69,8 @@ def parser(str):
     second_part = re.findall(RE, str[1].replace(" ",""))
 
     # ********
-    print(first_part)
-    print(second_part, "\n")
+    # print(first_part)
+    # print(second_part, "\n")
     # ********
     
     # CHECKS
@@ -81,8 +93,6 @@ def parser(str):
             superior_degs.append(term)
     
     ### Polynom Degree ####
-    # for _ in superior_degs:
-    #     print("SUP!!", _)
     i = 0
     j = 0
     while i < len(superior_degs):
@@ -94,60 +104,43 @@ def parser(str):
             else:
                 j += 1
         i += 1
-    # print("\n")
-    for _ in superior_degs:
-        print("SUP!!", _)    
-# *************************************
+    superior_degs.sort(key=attrgetter('deg'), reverse=True)
+
     poly_deg = 0
-    if len(superior_degs) == 0:
-        for _ in equation:  
-            if _.deg > poly_deg and _.coef != 0:
-                poly_deg = _.deg
-    else:
-        for _ in superior_degs:  
-            if _.deg > poly_deg and _.coef != 0:
-                poly_deg = _.deg
-    # *************
-    print("Equation: ")
-    for _ in equation:
-        print(_)
-    print('\n')
-    # *************
+    for _ in superior_degs+equation:  
+        if _.deg > poly_deg and _.coef != 0:
+            poly_deg = _.deg
+
+    print('**************')
+    print("Polynomial degree: ",poly_deg)
+    print('**************')
+    print_reduced_form(equation, superior_degs)
+    print('**************')
+    
     return equation, poly_deg
 
-def print_reduced_form(equation):
-    print("**************\nReduced form:", end=" ")
-    for _ in reversed(equation):
-        if _.coef != 0:
-            if _.coef < 0:
-                if _.coef == -1:
-                    print('-',end=" ")
-                else:
-                    print(f"- {_.coef*(-1)}", end=" ")
-            else:
-                if _.deg == 2:
-                    print(f"{_.coef} *", end=" ")
-                elif _.coef == 1:
-                    print('+',end=" ")
-                else:
-                    print(f"+ {_.coef}", end=" ")
-            if _.deg != 0:
-                print(f"X^{_.deg}", end=" ")
-        elif _.deg == 0:
-            print(f"{_.coef}", end=" ")
-    print("= 0\n**************")
 
-def sqrt(x, precision):
-    res = 0
-    pas = 1
-    while (pas > precision):
-        if (res * res == x):
-            break
-        elif (res * res > x):
-            res -= pas
-            pas /= 10
-        res += pas
-    return(res)
+def print_reduced_form(equation, sup):
+    print("Reduced form:", end=" ")
+    for _ in sup:
+        if _.coef == 0:
+            continue
+        if _.coef < 0:
+            print('-', (_.coef) * -1, end=" ")
+        else:
+            print('+', _.coef, end=' ')
+        print(f'* X^{_.deg}', end=' ')
+
+    for _ in reversed(equation):
+        if _.coef == 0:
+            continue
+        if _.coef < 0:
+            print('-', (_.coef) * -1, end=" ")
+        else:
+            print('+', _.coef, end=' ')
+        if _.deg != 0:
+            print(f'* X^{_.deg}', end=' ')    
+    print("= 0")
 
 def solve_2nd_deg(equation):
     a = equation[2].coef
@@ -155,16 +148,20 @@ def solve_2nd_deg(equation):
     c = equation[0].coef
     delta = b * b - 4 * a * c
     if delta == 0:
-        print(f"Discriminat is null; The solution is: '{-b / (2*a)}'")
+        print(f'Discriminat is null; The solution is: \'{"{:.6f}".format(-b / (2*a))}\'')
     elif delta > 0:
         x1 = (-b + sqrt(delta, 0.00000001))/ (2*a)
         x2 = (-b - sqrt(delta, 0.00000001))/ (2*a)
-        print(f'Discriminat is strictly positive; The solutions are: \'{"{:.6f}".format(x1)}\' and \'{"{:.6f}".format(x2)}\'')
+        print(f'Discriminat is strictly positive; The solutions are:', end=' ')
+        print(f'\'{"{:.6f}".format(x1)}\' and \'{"{:.6f}".format(x2)}\'')
     else:
         print('Discriminat is strictly negative; The solutions are:', end=" ")
         re = -b / (2*a)
         im = sqrt(-delta, 0.00000001)/(2*a)
-        print(f'\'{float("{:.6f}".format(re))} + i*{float("{:.6f}".format(im))}\' and \'{float("{:.6f}".format(re))} - i*{float("{:.6f}".format(im))}\'')
+        if re!=0:
+            print(f'\'{float("{:.6f}".format(re))} + i*{float("{:.6f}".format(im))}\' and \'{float("{:.6f}".format(re))} - i*{float("{:.6f}".format(im))}\'')
+        else:
+            print(f'\'i*({float("{:.6f}".format(im))})\' and \'-i*({float("{:.6f}".format(im))})\'')
 
         
 
@@ -176,14 +173,9 @@ def main(argv):
     if (len(str) != 2):
        sys.exit(EGALE_ERR)
     equation, poly_deg = parser(str)
-    
-    print("**************\nPolynomial degree: ",poly_deg)
+
     if poly_deg > 2:
         sys.exit(DEG_ERR)
-    
-    # SIMPLIFY
-    print_reduced_form(equation)
-    # SOLVE
 
     if poly_deg == 0:
         if equation[0].coef == 0:
@@ -191,12 +183,9 @@ def main(argv):
         else:
             print("There are No possible Solutions!")
     elif poly_deg == 1:
-        print("The solution is: ", equation[0].coef / equation[1].coef * (-1))
+        sol = equation[0].coef / equation[1].coef * (-1)
+        print(f'The solution is: \'{"{:.6f}".format(sol)}\'')
     else:
         solve_2nd_deg(equation)
         
-
-
-
-if __name__ == "__main__":
-	main(sys.argv)
+main(sys.argv)
